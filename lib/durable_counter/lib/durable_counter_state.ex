@@ -20,7 +20,7 @@ defmodule DurableCounter.DurableCounterState do
     Logger.info("Initializing DurableCounterState with counter: #{counter}")
 
     {:ok, Map.merge(state, %{session_counter: 0, started_at: DateTime.utc_now()}),
-     permanent: true}
+     permanent: true, auto_sync: true}
   end
 
   @impl true
@@ -65,8 +65,12 @@ defmodule DurableCounter.DurableCounterState do
   end
 
   defp make_change(state) do
-    PubSub.broadcast(DurableCounter.PubSub, topic(), {:counter, state.counter})
-    {:reply, state.counter, state}
+    PubSub.broadcast(DurableCounter.PubSub, topic(),
+      counter: state.counter,
+      session_counter: state.session_counter
+    )
+
+    {:reply, {state.counter, state.session_counter}, state}
   end
 
   defp make_change(state, change) do
