@@ -7,6 +7,13 @@ defmodule DurableCounter.Application do
 
   @impl true
   def start(_type, _args) do
+    ekv_config = [
+      name: :durable_ekv,
+      data_dir: "./data/ekv_store",
+      cluster_size: 1,
+      shards: 2
+    ]
+
     children = [
       DurableCounterWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:durable_counter, :dns_cluster_query) || :ignore},
@@ -15,8 +22,12 @@ defmodule DurableCounter.Application do
       # {DurableCounter.Worker, arg},
       # Start to serve requests, typically the last entry
       DurableCounterWeb.Endpoint,
-      # Start the App State
-      DurableCounter.DurableCounterState
+      # Start the App State,
+      {EKV, ekv_config},
+      {DurableServer.Supervisor,
+       name: DurableCounterSup,
+       prefix: "counter/",
+       backend: {DurableServer.Backends.EKVStore, [name: ekv_config[:name], start: false]}}
     ]
 
     # See https://elixir.hexdocs.pm/Supervisor.html

@@ -7,6 +7,11 @@ defmodule DurableCounterWeb.Counter do
   @topic DurableCounterState.topic()
 
   def mount(_session, _params, socket) do
+    DurableServer.Supervisor.ensure_started_child(
+      DurableCounterSup,
+      {DurableCounterState, key: @topic, initial_state: %{counter: 0}}
+    )
+
     if connected?(socket) do
       # subscribe to the channel
       Endpoint.subscribe(@topic)
