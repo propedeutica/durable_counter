@@ -14,7 +14,9 @@ defmodule DurableCounter.Application do
       # Start a worker by calling: DurableCounter.Worker.start_link(arg)
       # {DurableCounter.Worker, arg},
       # Start to serve requests, typically the last entry
-      DurableCounterWeb.Endpoint
+      DurableCounterWeb.Endpoint,
+      # Start the App State
+      DurableCounter.DurableCounterState
     ]
 
     # See https://elixir.hexdocs.pm/Supervisor.html

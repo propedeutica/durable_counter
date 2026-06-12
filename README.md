@@ -1,5 +1,9 @@
 # DurableCounter
 
+A distributed counter that stores the basic information in a local dabatase so it is not lost when the server is restarted.
+
+
+
 To start your Phoenix server:
 
 * Run `mix setup` to install and setup dependencies
