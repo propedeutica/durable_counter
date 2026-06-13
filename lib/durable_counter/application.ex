@@ -9,7 +9,7 @@ defmodule DurableCounter.Application do
   def start(_type, _args) do
     ekv_config = [
       name: :durable_ekv,
-      data_dir: "./data/ekv_store",
+      data_dir: Application.get_env(:durable_counter, :ekv_data_dir, "./data/ekv_store"),
       cluster_size: 1,
       shards: 2
     ]

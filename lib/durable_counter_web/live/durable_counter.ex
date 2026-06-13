@@ -6,7 +6,8 @@ defmodule DurableCounterWeb.Counter do
 
   @topic DurableCounterState.topic()
 
-  def mount(_session, _params, socket) do
+  @impl true
+  def mount(_params, _session, socket) do
     DurableServer.Supervisor.ensure_started_child(
       DurableCounterSup,
       {DurableCounterState, key: @topic, initial_state: %{counter: 0}}
@@ -17,25 +18,27 @@ defmodule DurableCounterWeb.Counter do
       Endpoint.subscribe(@topic)
     end
 
-    {counter, session_counter} = DurableCounterState.current()
-    {:ok, assign(socket, counter: counter, session_counter: session_counter)}
+    state = DurableCounterState.current()
+    {:ok, assign(socket, state)}
   end
 
-  @spec handle_event(<<_::24>>, any(), map()) :: {:noreply, map()}
+  @impl true
   def handle_event("inc", _, socket) do
-    {counter, session_counter} = DurableCounterState.incr()
-    {:noreply, assign(socket, counter: counter, session_counter: session_counter)}
+    state = DurableCounterState.incr()
+    {:noreply, assign(socket, state)}
   end
 
   def handle_event("dec", _, socket) do
-    {counter, session_counter} = DurableCounterState.decr()
-    {:noreply, assign(socket, counter: counter, session_counter: session_counter)}
+    state = DurableCounterState.decr()
+    {:noreply, assign(socket, state)}
   end
 
-  def handle_info([counter: counter, session_counter: session_counter], socket) do
-    {:noreply, assign(socket, counter: counter, session_counter: session_counter)}
+  @impl true
+  def handle_info({:counter_state, state}, socket) do
+    {:noreply, assign(socket, state)}
   end
 
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="text-center">

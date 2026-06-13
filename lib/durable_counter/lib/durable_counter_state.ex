@@ -17,7 +17,7 @@ defmodule DurableCounter.DurableCounterState do
 
   @impl true
   def init(%{counter: counter} = state) do
-    Logger.info("Initializing DurableCounterState with counter: #{counter}")
+    Logger.info("Counter initialized", counter: counter)
 
     {:ok, Map.merge(state, %{session_counter: 0, started_at: DateTime.utc_now()}),
      permanent: true, auto_sync: true}
@@ -26,60 +26,54 @@ defmodule DurableCounter.DurableCounterState do
   @impl true
   def load_state(_old_vsn, %{counter: counter} = _persisted_state), do: %{counter: counter}
 
-  def incr() do
-    Logger.debug("Finding server and calling increment on counter")
-
-    {pid, _nil} = DurableServer.Supervisor.lookup(DurableCounterSup, topic())
+  def incr do
+    {pid, _meta} = DurableServer.Supervisor.lookup(DurableCounterSup, topic())
     GenServer.call(pid, :increment)
   end
 
-  def decr() do
-    Logger.debug("Finding server and calling decrement on counter")
-
-    {pid, _nil} = DurableServer.Supervisor.lookup(DurableCounterSup, topic())
+  def decr do
+    {pid, _meta} = DurableServer.Supervisor.lookup(DurableCounterSup, topic())
     GenServer.call(pid, :decrement)
   end
 
-  def current() do
-    Logger.debug("Finding server and calling current counter")
-
-    {pid, _nil} = DurableServer.Supervisor.lookup(DurableCounterSup, topic())
+  def current do
+    {pid, _meta} = DurableServer.Supervisor.lookup(DurableCounterSup, topic())
     GenServer.call(pid, :get_count)
   end
 
-  # Implementation (runs on the GenServer process)
-
   @impl true
   def handle_call(:get_count, _from, state) do
-    make_change(state)
+    {:reply, state, state}
   end
 
   @impl true
-  def handle_call(:increment, _from, counter) do
-    make_change(counter, +1)
+  def handle_call(:increment, _from, state) do
+    apply_change(state, +1)
   end
 
   @impl true
-  def handle_call(:decrement, _from, counter) do
-    make_change(counter, -1)
+  def handle_call(:decrement, _from, state) do
+    apply_change(state, -1)
   end
 
-  defp make_change(state) do
-    PubSub.broadcast(DurableCounter.PubSub, topic(),
-      counter: state.counter,
-      session_counter: state.session_counter
-    )
-
-    {:reply, {state.counter, state.session_counter}, state}
-  end
-
-  defp make_change(state, change) do
+  defp apply_change(state, delta) do
     new_state = %{
       state
-      | counter: state.counter + change,
-        session_counter: state.session_counter + change
+      | counter: state.counter + delta,
+        session_counter: state.session_counter + delta
     }
 
-    make_change(new_state)
+    Logger.debug("Counter updated",
+      counter: new_state.counter,
+      session_counter: new_state.session_counter,
+      delta: delta
+    )
+
+    broadcast_state(new_state)
+    {:reply, new_state, new_state}
+  end
+
+  defp broadcast_state(state) do
+    PubSub.broadcast(DurableCounter.PubSub, topic(), {:counter_state, state})
   end
 end
