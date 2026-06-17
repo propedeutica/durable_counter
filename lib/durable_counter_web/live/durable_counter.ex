@@ -47,6 +47,7 @@ defmodule DurableCounterWeb.Counter do
       <.button phx-click="dec" class="w-20 bg-red-500 hover:bg-red-600">-</.button>
       <.button phx-click="inc" class="w-20 bg-green-500 hover:bg-green-600">+</.button>
       <h2 class="text-center pt-2 text-xl">Server: {Node.self()}</h2>
+      <h2 class="text-center pt-2 text-xl">Started at: {@started_at}</h2>
     </div>
     """
   end

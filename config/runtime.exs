@@ -23,6 +23,19 @@ end
 config :durable_counter, DurableCounterWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# Node configuration — these are also read from counter.conf by DurableCounter.Config.
+# Only set here if the env var is present, to avoid overwriting compile-time config (e.g. test.exs).
+for {env_key, app_key} <- [
+      {"NODE_ROLE", :node_role},
+      {"NODE_NAME", :node_name},
+      {"ERLANG_COOKIE", :erlang_cookie},
+      {"EKV_DATA_DIR", :ekv_data_dir}
+    ] do
+  if value = System.get_env(env_key) do
+    config :durable_counter, [{app_key, value}]
+  end
+end
+
 if config_env() == :prod do
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
